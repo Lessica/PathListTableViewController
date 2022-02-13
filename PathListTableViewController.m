@@ -20,7 +20,7 @@
 @synthesize contents = _contents;
 
 + (NSString *)viewerName {
-    return NSLocalizedString(@"Path List Viewer", @"");
+    return NSLocalizedString(@"Path List Viewer", @"PathListTableViewController");
 }
 
 - (instancetype)initWithPath:(NSString *)path {
@@ -73,7 +73,7 @@
         } while ([contentComponents count] > 0);
     }
     [mContents removeObjectsInArray:@[@"", @"/"]];
-    [mContents sortUsingSelector:@selector(localizedCompare:)];
+    [mContents sortUsingSelector:@selector(localizedStandardCompare:)];
     if (isFiltered) {
         _filteredContents = [mContents copy];
     } else {
@@ -167,7 +167,10 @@
 
     NSString *searchContent = self.searchController.isActive ? self.searchController.searchBar.text : nil;
 
-    NSDictionary *rowAttrs = @{ NSFontAttributeName: [UIFont fontWithName:@"Courier" size:14.0], NSForegroundColorAttributeName: [UIColor labelColor] };
+    NSDictionary *rowAttrs = @{
+        NSFontAttributeName: [UIFont monospacedSystemFontOfSize:14.0 weight:UIFontWeightRegular],
+        NSForegroundColorAttributeName: [UIColor labelColor],
+    };
 
     NSMutableAttributedString *mRowText = [[NSMutableAttributedString alloc] initWithString:rowText attributes:rowAttrs];
     if (searchContent) {
@@ -205,6 +208,9 @@
     if (self.tapToCopy) {
         NSString *content = (self.searchController.isActive ? self.filteredContents[indexPath.row] : self.contents[indexPath.row]);
         [[UIPasteboard generalPasteboard] setString:content];
+        if ([self.delegate respondsToSelector:@selector(pathListTableViewRowDidCopy:withText:)]) {
+            [self.delegate pathListTableViewRowDidCopy:self withText:content];
+        }
     }
 }
 
@@ -212,11 +218,18 @@
     if (self.pressToCopy) {
         NSString *content = (self.searchController.isActive ? self.filteredContents[indexPath.row] : self.contents[indexPath.row]);
         NSArray <UIAction *> *cellActions = @[
-            [UIAction actionWithTitle:@"Copy Name" image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil handler:^(__kindof UIAction *_Nonnull action) {
-                 [[UIPasteboard generalPasteboard] setString:[content lastPathComponent]];
+            [UIAction actionWithTitle:NSLocalizedString(@"Copy Name", @"PathListTableViewController") image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil handler:^(__kindof UIAction *_Nonnull action) {
+                 NSString *lastPathComponent = [content lastPathComponent];
+                 [[UIPasteboard generalPasteboard] setString:lastPathComponent];
+                 if ([self.delegate respondsToSelector:@selector(pathListTableViewRowDidCopy:withText:)]) {
+                     [self.delegate pathListTableViewRowDidCopy:self withText:lastPathComponent];
+                 }
              }],
-            [UIAction actionWithTitle:@"Copy Path" image:[UIImage systemImageNamed:@"doc.on.clipboard"] identifier:nil handler:^(__kindof UIAction *_Nonnull action) {
+            [UIAction actionWithTitle:NSLocalizedString(@"Copy Path", @"PathListTableViewController") image:[UIImage systemImageNamed:@"doc.on.clipboard"] identifier:nil handler:^(__kindof UIAction *_Nonnull action) {
                  [[UIPasteboard generalPasteboard] setString:content];
+                 if ([self.delegate respondsToSelector:@selector(pathListTableViewRowDidCopy:withText:)]) {
+                     [self.delegate pathListTableViewRowDidCopy:self withText:content];
+                 }
              }],
         ];
         return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu *_Nullable (NSArray<UIMenuElement *> *_Nonnull suggestedActions) {

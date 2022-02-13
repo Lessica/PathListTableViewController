@@ -10,7 +10,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PathListTableViewController;
+
+@protocol PathListTableViewControllerDelegate <NSObject>
+@optional
+- (void)pathListTableViewRowDidCopy:(PathListTableViewController *)controller withText:(NSString *)text;
+@end
+
 @interface PathListTableViewController : UITableViewController
+
+@property (nonatomic, weak) id <PathListTableViewControllerDelegate> delegate;
 
 - (instancetype)initWithPath:(NSString *)path;
 @property (nonatomic, copy, readonly) NSString *entryPath;
